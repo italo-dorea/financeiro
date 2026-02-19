@@ -12,7 +12,7 @@ export function generateDueDates(
 ): string[] {
   const first = parseISO(rule.first_due_date);
 
-  const hardEnd = parseISO(family.end_date);
+  const hardEnd = parseISO(family.end_date || "2099-12-31");
   const softEnd = rule.repeat_until ? parseISO(rule.repeat_until) : hardEnd;
   const end = isAfter(softEnd, hardEnd) ? hardEnd : softEnd;
 
