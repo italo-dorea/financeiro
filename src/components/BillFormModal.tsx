@@ -46,6 +46,11 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
     const [paymentDate, setPaymentDate] = useState("");
     const [createdAt, setCreatedAt] = useState("");
 
+    // Recurrence logic
+    const [isRecurring, setIsRecurring] = useState(false);
+    const [periodicity, setPeriodicity] = useState<"weekly" | "monthly" | "yearly">("monthly");
+    const [installments, setInstallments] = useState("");
+
     useEffect(() => {
         if (billToEdit) {
             setDescription(billToEdit.description || billToEdit.name || "");
@@ -57,6 +62,9 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
             setIsReceived(billToEdit.received || false);
             setPaymentDate(billToEdit.payment_date || "");
             setCreatedAt(billToEdit.created_at || "");
+            setIsRecurring(billToEdit.is_recurring ?? false);
+            setPeriodicity(billToEdit.periodicity || "monthly");
+            setInstallments(billToEdit.total_installments?.toString() || "");
         } else {
             resetForm();
         }
@@ -72,6 +80,9 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
         setIsReceived(false);
         setPaymentDate("");
         setCreatedAt("");
+        setIsRecurring(false);
+        setPeriodicity("monthly");
+        setInstallments("");
     };
 
     const handleClose = () => {
@@ -96,6 +107,11 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
             paid: isPaid,
             received: isReceived,
             payment_date: paymentDate || null,
+            ...(isRecurring ? {
+                is_recurring: isRecurring,
+                periodicity: periodicity,
+                total_installments: parseInt(installments) || null
+            } : {})
         };
 
         let error;
@@ -128,7 +144,18 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
                 <ModalCloseButton />
                 <ModalBody>
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                        <GridItem colSpan={{ base: 1, md: 2 }}>
+                        <GridItem colSpan={1}>
+                            <FormControl isRequired>
+                                <FormLabel>Família</FormLabel>
+                                <Select placeholder="Selecione a família" value={familyId} onChange={(e) => setFamilyId(e.target.value)}>
+                                    {families.map((f) => (
+                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </GridItem>
+
+                        <GridItem colSpan={1}>
                             <FormControl isRequired>
                                 <FormLabel>Descrição</FormLabel>
                                 <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Conta de Luz" />
@@ -159,16 +186,6 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
                             </FormControl>
                         </GridItem>
 
-                        <GridItem colSpan={1}>
-                            <FormControl isRequired>
-                                <FormLabel>Família</FormLabel>
-                                <Select placeholder="Selecione a família" value={familyId} onChange={(e) => setFamilyId(e.target.value)}>
-                                    {families.map((f) => (
-                                        <option key={f.id} value={f.id}>{f.name}</option>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </GridItem>
 
                         <GridItem colSpan={1}>
                             <HStack w="full" spacing={6} alignItems="center" h="full">
@@ -193,6 +210,41 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
                                 <FormLabel>Data de Pagamento</FormLabel>
                                 <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
                             </FormControl>
+                        </GridItem>
+
+                        <GridItem colSpan={{ base: 1, md: 2 }}>
+                            <HStack align="start" justify="space-between" mt={4} mb={2}>
+                                <FormControl display="flex" alignItems="center" w="auto">
+                                    <Switch id="recurring-switch" isChecked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} mr={2} />
+                                    <FormLabel htmlFor="recurring-switch" mb="0" fontSize="md" fontWeight="bold">
+                                        Fatura Recorrente?
+                                    </FormLabel>
+                                </FormControl>
+                            </HStack>
+
+                            {isRecurring && (
+                                <HStack spacing={4} align="center" mt={2} p={4} borderWidth={1} borderRadius="md" bg="gray.50" _dark={{ bg: "gray.700" }}>
+                                    <FormControl w={{ base: "full", md: "50%" }}>
+                                        <FormLabel>Periodicidade</FormLabel>
+                                        <Select value={periodicity} onChange={(e) => setPeriodicity(e.target.value as any)}>
+                                            <option value="weekly">Semanal</option>
+                                            <option value="monthly">Mensal</option>
+                                            <option value="yearly">Anual</option>
+                                        </Select>
+                                    </FormControl>
+
+                                    <FormControl w={{ base: "full", md: "50%" }}>
+                                        <FormLabel>Quantidade de Parcelas</FormLabel>
+                                        <Input
+                                            type="number"
+                                            min={2}
+                                            value={installments}
+                                            onChange={(e) => setInstallments(e.target.value)}
+                                            placeholder="Ex: 12"
+                                        />
+                                    </FormControl>
+                                </HStack>
+                            )}
                         </GridItem>
 
                         {createdAt && (

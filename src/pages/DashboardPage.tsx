@@ -25,12 +25,14 @@ import { Family } from "../domain/types";
 import { BillsTable } from "../components/BillsTable";
 import { FamilyFormModal } from "../components/FamilyFormModal";
 import { BillFormModal } from "../components/BillFormModal";
+import { BatchImportModal } from "../components/BatchImportModal";
 import { NumericFormat } from "react-number-format";
 
 export default function DashboardPage() {
     const toast = useToast();
     const { isOpen: isFamilyOpen, onOpen: onOpenFamily, onClose: onCloseFamily } = useDisclosure();
     const { isOpen: isBillOpen, onOpen: onOpenBill, onClose: onCloseBill } = useDisclosure();
+    const { isOpen: isBatchOpen, onOpen: onOpenBatch, onClose: onCloseBatch } = useDisclosure();
 
     const [families, setFamilies] = useState<Family[]>([]);
     const [bills, setBills] = useState<any[]>([]);
@@ -38,6 +40,7 @@ export default function DashboardPage() {
 
     const [billToEdit, setBillToEdit] = useState<any>(null);
     const [familyToEdit, setFamilyToEdit] = useState<Family | null>(null);
+    const [selectedBillIds, setSelectedBillIds] = useState<string[]>([]);
 
     const handleOpenFamily = (family?: Family) => {
         setFamilyToEdit(family || null);
@@ -95,6 +98,30 @@ export default function DashboardPage() {
             toast({ status: "success", title: "Fatura excluída" });
             loadData();
         }
+    };
+
+    const handleBatchDelete = async () => {
+        const qtd = selectedBillIds.length;
+        if (!confirm(`Tem certeza que deseja excluir ${qtd > 1 ? `estes ${qtd} itens selecionados` : 'este item selecionado'}?`)) return;
+
+        const { error } = await billsService.deleteBatch(selectedBillIds);
+        if (error) {
+            toast({ status: "error", title: "Erro ao excluir selecionados", description: error.message });
+        } else {
+            toast({ status: "success", title: "Faturas excluídas com sucesso" });
+            setSelectedBillIds([]); // Limpa as seleções
+            loadData();
+        }
+    };
+
+    const handleSelectBill = (id: string, checked: boolean) => {
+        if (checked) setSelectedBillIds(prev => [...prev, id]);
+        else setSelectedBillIds(prev => prev.filter(bId => bId !== id));
+    };
+
+    const handleSelectAllBills = (checked: boolean) => {
+        if (checked) setSelectedBillIds(filteredBills.map(b => b.id));
+        else setSelectedBillIds([]);
     };
 
     const handleUpdateBill = async (id: string, updates: any) => {
@@ -155,6 +182,14 @@ export default function DashboardPage() {
                     <Heading size="lg" color="brand.600">Dashboard de Faturas</Heading>
                 </HStack>
                 <HStack>
+                    {selectedBillIds.length > 0 && (
+                        <Button colorScheme="red" variant="solid" onClick={handleBatchDelete}>
+                            Excluir Selecionadas ({selectedBillIds.length})
+                        </Button>
+                    )}
+                    <Button leftIcon={<AddIcon />} display={"none"} variant="outline" colorScheme="blue" onClick={onOpenBatch}>
+                        Importar em Lote
+                    </Button>
                     <Button leftIcon={<AddIcon />} onClick={() => { setBillToEdit(null); onOpenBill(); }}>
                         Nova Fatura
                     </Button>
@@ -273,6 +308,9 @@ export default function DashboardPage() {
                     onEdit={handleEditBill}
                     onDelete={handleDeleteBill}
                     onUpdate={handleUpdateBill}
+                    selectedIds={selectedBillIds}
+                    onSelect={handleSelectBill}
+                    onSelectAll={handleSelectAllBills}
                 />
             )}
 
@@ -283,6 +321,12 @@ export default function DashboardPage() {
                 onSuccess={loadData}
                 families={families}
                 billToEdit={billToEdit}
+            />
+            <BatchImportModal
+                isOpen={isBatchOpen}
+                onClose={onCloseBatch}
+                onSuccess={loadData}
+                families={families}
             />
         </Container>
     );

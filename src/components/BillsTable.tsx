@@ -12,6 +12,7 @@ import {
     Input,
     useToast,
     Tooltip,
+    Checkbox,
 } from "@chakra-ui/react";
 import { DeleteIcon, EditIcon, InfoIcon } from "@chakra-ui/icons";
 import { Family } from "../domain/types";
@@ -23,9 +24,12 @@ type Props = {
     onEdit: (bill: any) => void;
     onDelete: (id: string) => void;
     onUpdate: (id: string, updates: any) => void;
+    selectedIds: string[];
+    onSelect: (id: string, checked: boolean) => void;
+    onSelectAll: (checked: boolean) => void;
 };
 
-export function BillsTable({ bills, families, onEdit, onDelete, onUpdate }: Props) {
+export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, selectedIds, onSelect, onSelectAll }: Props) {
     const toast = useToast();
 
     const handleUpdate = (id: string, field: string, value: any) => {
@@ -37,19 +41,33 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate }: Prop
             <Table variant="simple" size="sm">
                 <Thead bg="brand.500">
                     <Tr>
+                        <Th width="40px">
+                            <Checkbox
+                                colorScheme="whiteAlpha"
+                                isChecked={bills.length > 0 && selectedIds.length === bills.length}
+                                isIndeterminate={selectedIds.length > 0 && selectedIds.length < bills.length}
+                                onChange={(e) => onSelectAll(e.target.checked)}
+                            />
+                        </Th>
                         <Th color="white">Descrição</Th>
                         <Th color="white">Vencimento</Th>
                         <Th color="white" isNumeric>Valor</Th>
                         <Th color="white">Pago</Th>
                         <Th color="white">Recebido</Th>
-                        <Th color="white">Família</Th>
                         <Th color="white" textAlign="center">Obs</Th>
+                        <Th color="white">Família</Th>
                         <Th color="white" width="50px">Ações</Th>
                     </Tr>
                 </Thead>
                 <Tbody>
                     {bills.map((bill) => (
-                        <Tr key={bill.id} _hover={{ bg: "gray.50" }}>
+                        <Tr key={bill.id} _hover={{ bg: "gray.50" }} bg={selectedIds.includes(bill.id) ? "blue.50" : "transparent"}>
+                            <Td>
+                                <Checkbox
+                                    isChecked={selectedIds.includes(bill.id)}
+                                    onChange={(e) => onSelect(bill.id, e.target.checked)}
+                                />
+                            </Td>
                             <Td fontWeight="medium">{bill.name}</Td>
                             <Td>
                                 {new Date(bill.due_date).toLocaleDateString('pt-BR')}
@@ -80,10 +98,10 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate }: Prop
                                 />
                             </Td>
                             <Td>
-                                {families.find(f => f.id === bill.family_id)?.name || "-"}
+                                {bill.note || "-"}
                             </Td>
                             <Td>
-                                {bill.note || "-"}
+                                {families.find(f => f.id === bill.family_id)?.name || "-"}
                             </Td>
                             <Td>
                                 <Box display="flex" gap={1}>
@@ -112,7 +130,7 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate }: Prop
                     ))}
                     {bills.length === 0 && (
                         <Tr>
-                            <Td colSpan={8} textAlign="center" py={4} color="gray.500">
+                            <Td colSpan={9} textAlign="center" py={4} color="gray.500">
                                 Nenhuma fatura encontrada.
                             </Td>
                         </Tr>
