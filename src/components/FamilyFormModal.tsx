@@ -1,30 +1,15 @@
 import {
-    Button,
-    FormControl,
-    FormLabel,
-    Input,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    Stack,
-    Textarea,
-    useToast,
-    VStack,
-    HStack,
-    IconButton,
-    Tooltip,
-    SimpleGrid,
-    GridItem,
+    Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalCloseButton, ModalContent,
+    ModalFooter, ModalHeader, ModalOverlay, Textarea, useToast, HStack, IconButton,
+    Tooltip, SimpleGrid, GridItem, Select, Divider, Heading
 } from "@chakra-ui/react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { PatternFormat } from "react-number-format";
 import { familiesService } from "../services/familiesService";
+import { sponsorsService } from "../services/sponsorsService";
 import { Family } from "../domain/types";
+import { useAuth } from "../contexts/AuthContext";
 
 type Props = {
     isOpen: boolean;
@@ -35,7 +20,9 @@ type Props = {
 
 export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Props) {
     const toast = useToast();
+    const { role } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [sponsors, setSponsors] = useState<any[]>([]);
 
     const [name, setName] = useState("");
     const [facilitatorName, setFacilitatorName] = useState("");
@@ -43,9 +30,21 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
     const [observations, setObservations] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
-    const [createdAt, setCreatedAt] = useState("");
+    const [sponsorId, setSponsorId] = useState("");
+    
+    // Bank Details
+    const [bankName, setBankName] = useState("");
+    const [bankAgency, setBankAgency] = useState("");
+    const [bankAccount, setBankAccount] = useState("");
+    const [bankPixKey, setBankPixKey] = useState("");
+
+    const isAssistant = role === "assistant";
+    const isReadOnly = isAssistant && !!familyToEdit;
 
     useEffect(() => {
+        if (isOpen) {
+            loadSponsors();
+        }
         if (familyToEdit) {
             setName(familyToEdit.name || "");
             setFacilitatorName(familyToEdit.facilitator_name || "");
@@ -53,11 +52,21 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
             setObservations(familyToEdit.observations || "");
             setStartDate(familyToEdit.start_date || "");
             setEndDate(familyToEdit.end_date || "");
-            setCreatedAt((familyToEdit as any).created_at || "");
+            setSponsorId(familyToEdit.sponsor_id || "");
+            
+            setBankName(familyToEdit.bank_name || "");
+            setBankAgency(familyToEdit.bank_agency || "");
+            setBankAccount(familyToEdit.bank_account || "");
+            setBankPixKey(familyToEdit.bank_pix_key || "");
         } else {
             resetForm();
         }
     }, [familyToEdit, isOpen]);
+
+    const loadSponsors = async () => {
+        const { data } = await sponsorsService.getAll();
+        if (data) setSponsors(data);
+    };
 
     const resetForm = () => {
         setName("");
@@ -66,7 +75,11 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
         setObservations("");
         setStartDate("");
         setEndDate("");
-        setCreatedAt("");
+        setSponsorId("");
+        setBankName("");
+        setBankAgency("");
+        setBankAccount("");
+        setBankPixKey("");
     };
 
     const handleClose = () => {
@@ -75,6 +88,7 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
     };
 
     const handleSave = async () => {
+        if (isReadOnly) return;
         if (!name || !facilitatorName) {
             toast({ status: "warning", title: "Preencha os campos obrigatórios." });
             return;
@@ -89,6 +103,11 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
             observations,
             start_date: startDate || undefined,
             end_date: endDate || undefined,
+            sponsor_id: sponsorId || null,
+            bank_name: bankName,
+            bank_agency: bankAgency,
+            bank_account: bankAccount,
+            bank_pix_key: bankPixKey,
         } as any;
 
         let error;
@@ -113,7 +132,7 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} size="2xl">
+        <Modal isOpen={isOpen} onClose={handleClose} size="3xl">
             <ModalOverlay />
             <ModalContent>
                 <ModalHeader>{familyToEdit ? "Editar Família" : "Nova Família"}</ModalHeader>
@@ -121,16 +140,32 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
                 <ModalBody>
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                         <GridItem colSpan={{ base: 1, md: 2 }}>
+                            <Heading size="SM" mb={2}>Informações Básicas</Heading>
+                            <Divider mb={4} />
+                        </GridItem>
+
+                        <GridItem colSpan={1}>
                             <FormControl isRequired>
                                 <FormLabel>Nome da Família</FormLabel>
-                                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Família Silva" />
+                                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Família Silva" isReadOnly={isReadOnly} />
+                            </FormControl>
+                        </GridItem>
+
+                        <GridItem colSpan={1}>
+                            <FormControl>
+                                <FormLabel>Patrocinador</FormLabel>
+                                <Select placeholder="Sem Patrocinador" value={sponsorId} onChange={(e) => setSponsorId(e.target.value)} isReadOnly={isReadOnly} isDisabled={isReadOnly}>
+                                    {sponsors.map(s => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                    ))}
+                                </Select>
                             </FormControl>
                         </GridItem>
 
                         <GridItem colSpan={1}>
                             <FormControl isRequired>
                                 <FormLabel>Nome do Facilitador</FormLabel>
-                                <Input value={facilitatorName} onChange={(e) => setFacilitatorName(e.target.value)} placeholder="Ex: João" />
+                                <Input value={facilitatorName} onChange={(e) => setFacilitatorName(e.target.value)} placeholder="Ex: João" isReadOnly={isReadOnly} />
                             </FormControl>
                         </GridItem>
 
@@ -143,8 +178,9 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
                                         format="(##) # ####-####"
                                         mask="_"
                                         value={facilitatorContact}
-                                        onValueChange={(values: any) => setFacilitatorContact(values.value)}
+                                        onValueChange={(values: any) => { if(!isReadOnly) setFacilitatorContact(values.value) }}
                                         placeholder="(99) 9 9999-9999"
+                                        isReadOnly={isReadOnly}
                                     />
                                     <Tooltip label="Falar com o facilitador no WhatsApp">
                                         <IconButton
@@ -166,34 +202,57 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
                         </GridItem>
 
                         <GridItem colSpan={{ base: 1, md: 2 }}>
+                            <Heading size="SM" mt={6} mb={2}>Dados Bancários</Heading>
+                            <Divider mb={4} />
+                        </GridItem>
+
+                        <GridItem colSpan={1}>
+                            <FormControl>
+                                <FormLabel>Banco</FormLabel>
+                                <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Ex: Nubank, Itaú" isReadOnly={isReadOnly} />
+                            </FormControl>
+                        </GridItem>
+                        <GridItem colSpan={1}>
+                            <FormControl>
+                                <FormLabel>Agência e Conta</FormLabel>
+                                <HStack>
+                                    <Input value={bankAgency} onChange={(e) => setBankAgency(e.target.value)} placeholder="Agência" w="40%" isReadOnly={isReadOnly} />
+                                    <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} placeholder="Conta" isReadOnly={isReadOnly} />
+                                </HStack>
+                            </FormControl>
+                        </GridItem>
+                        <GridItem colSpan={{ base: 1, md: 2 }}>
+                            <FormControl>
+                                <FormLabel>Chave PIX</FormLabel>
+                                <Input value={bankPixKey} onChange={(e) => setBankPixKey(e.target.value)} placeholder="CPF, Email, Celular ou Aleatória" isReadOnly={isReadOnly} />
+                            </FormControl>
+                        </GridItem>
+
+                        <GridItem colSpan={{ base: 1, md: 2 }}>
+                            <Heading size="SM" mt={6} mb={2}>Período e Observações</Heading>
+                            <Divider mb={4} />
+                        </GridItem>
+
+                        <GridItem colSpan={1}>
+                            <FormControl>
+                                <FormLabel>Data de Início</FormLabel>
+                                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} isReadOnly={isReadOnly} />
+                            </FormControl>
+                        </GridItem>
+
+                        <GridItem colSpan={1}>
+                            <FormControl>
+                                <FormLabel>Data de Fim</FormLabel>
+                                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} isReadOnly={isReadOnly} />
+                            </FormControl>
+                        </GridItem>
+
+                        <GridItem colSpan={{ base: 1, md: 2 }}>
                             <FormControl>
                                 <FormLabel>Observações</FormLabel>
-                                <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Notas sobre a família..." />
+                                <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Notas sobre a família..." isReadOnly={isReadOnly} />
                             </FormControl>
                         </GridItem>
-
-                        <GridItem colSpan={1}>
-                            <FormControl>
-                                <FormLabel>Data de Início (Opcional)</FormLabel>
-                                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                            </FormControl>
-                        </GridItem>
-
-                        <GridItem colSpan={1}>
-                            <FormControl>
-                                <FormLabel>Data de Fim (Opcional)</FormLabel>
-                                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                            </FormControl>
-                        </GridItem>
-
-                        {createdAt && (
-                            <GridItem colSpan={{ base: 1, md: 2 }}>
-                                <FormControl>
-                                    <FormLabel>Data de Criação</FormLabel>
-                                    <Input value={new Date(createdAt).toLocaleString('pt-BR')} isDisabled />
-                                </FormControl>
-                            </GridItem>
-                        )}
                     </SimpleGrid>
                 </ModalBody>
 
@@ -201,7 +260,7 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
                     <Button variant="ghost" mr={3} onClick={handleClose}>
                         Cancelar
                     </Button>
-                    <Button colorScheme="blue" onClick={handleSave} isLoading={loading}>
+                    <Button colorScheme="blue" onClick={handleSave} isLoading={loading} isDisabled={isReadOnly}>
                         Salvar
                     </Button>
                 </ModalFooter>

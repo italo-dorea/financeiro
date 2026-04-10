@@ -6,6 +6,11 @@ export type Family = {
   end_date?: string;   // YYYY-MM-DD
   facilitator_name?: string;
   facilitator_contact?: string;
+  bank_name?: string;
+  bank_agency?: string;
+  bank_account?: string;
+  bank_pix_key?: string;
+  sponsor_id?: string;
 };
 
 export type Delegate = {
@@ -30,6 +35,7 @@ export type BillRule = {
   is_recurring: boolean;
   periodicity: Periodicity | null;
   repeat_until: string | null;
+  drive_url?: string;
 };
 
 export type BillOccurrence = {
@@ -47,4 +53,5 @@ export type BillOccurrence = {
   paid: boolean;
   received: boolean;
   payment_date: string | null;
+  drive_url?: string;
 };

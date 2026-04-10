@@ -19,6 +19,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { familiesService } from "../services/familiesService";
 import { billsService } from "../services/billsService";
 import { Family } from "../domain/types";
@@ -47,35 +48,66 @@ export default function DashboardPage() {
         onOpenFamily();
     };
 
-    // Filters
-    const [statusFilter, setStatusFilter] = useState("all"); // all, paid, unpaid
-    const [receivedFilter, setReceivedFilter] = useState("all"); // all, received, unreceived
-    const [familyFilter, setFamilyFilter] = useState("");
-    const [startDateFilter, setStartDateFilter] = useState("");
-    const [endDateFilter, setEndDateFilter] = useState("");
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Filters from URL or Defaults
+    const statusFilter = searchParams.get("situacao") || "pendentes"; // default to pendentes (unpaid)
+    const receivedFilter = searchParams.get("recebimento") || "todos";
+    const familyFilter = searchParams.get("familia") || "";
+    const startDateFilter = searchParams.get("dataInicial") || "";
+    const endDateFilter = searchParams.get("dataFinal") || "";
+
+    const updateSearchParams = (key: string, value: string) => {
+        const newParams = new URLSearchParams(searchParams);
+        if (value && value !== "todos") {
+            newParams.set(key, value);
+        } else {
+            newParams.delete(key);
+        }
+        
+        // Always enforce status filter in URL if it's default to avoid confusion
+        if (key !== "situacao" && !newParams.has("situacao")) {
+            newParams.set("situacao", "pendentes");
+        }
+        if (key === "situacao" && value === "todos") {
+            newParams.set("situacao", "todos");
+        }
+        
+        setSearchParams(newParams);
+    };
 
     useEffect(() => {
+        // Ensure default status is in URL on first load if missing
+        if (!searchParams.has("situacao")) {
+            const newParams = new URLSearchParams(searchParams);
+            newParams.set("situacao", "pendentes");
+            setSearchParams(newParams, { replace: true });
+        }
         loadData();
     }, []);
 
     const loadData = async () => {
-        setLoading(true);
+        try {
+            setLoading(true);
 
-        // Load Families
-        const { data: familiesData } = await familiesService.getAll();
-        if (familiesData) setFamilies(familiesData as Family[]);
+            // Load Families
+            const { data: familiesData } = await familiesService.getAll();
+            if (familiesData) setFamilies(familiesData as Family[]);
 
-        // Load Bills
-        const { data: billsData, error } = await billsService.getAll();
+            // Load Bills
+            const { data: billsData, error } = await billsService.getAll();
 
-        setLoading(false);
+            if (error) {
+                toast({ status: "error", title: "Erro ao carregar faturas", description: error.message });
+                return;
+            }
 
-        if (error) {
-            toast({ status: "error", title: "Erro ao carregar faturas", description: error.message });
-            return;
+            setBills(billsData || []);
+        } catch (error: any) {
+            toast({ status: "error", title: "Erro interno", description: error.message || "Erro desconhecido" });
+        } finally {
+            setLoading(false);
         }
-
-        setBills(billsData || []);
     };
 
     const handleEditBill = (bill: any) => {
@@ -138,12 +170,12 @@ export default function DashboardPage() {
     const filteredBills = useMemo(() => {
         return bills.filter(bill => {
             // Status Filter
-            if (statusFilter === "paid" && !bill.paid) return false;
-            if (statusFilter === "unpaid" && bill.paid) return false;
+            if (statusFilter === "pagas" && !bill.paid) return false;
+            if (statusFilter === "pendentes" && bill.paid) return false;
 
             // Received Filter
-            if (receivedFilter === "received" && !bill.received) return false;
-            if (receivedFilter === "unreceived" && bill.received) return false;
+            if (receivedFilter === "recebidos" && !bill.received) return false;
+            if (receivedFilter === "pendentes" && bill.received) return false;
 
             // Family Filter
             if (familyFilter && bill.family_id !== familyFilter) return false;
@@ -170,8 +202,10 @@ export default function DashboardPage() {
 
     const filterToday = () => {
         const today = new Date().toISOString().split('T')[0];
-        setStartDateFilter(today);
-        setEndDateFilter(today);
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set("dataInicial", today);
+        newParams.set("dataFinal", today);
+        setSearchParams(newParams);
     };
 
     return (
@@ -235,26 +269,26 @@ export default function DashboardPage() {
             <Flex gap={4} mb={6} wrap="wrap" bg="white" p={6} borderRadius="lg" shadow="sm" borderWidth="1px" alignItems="flex-end">
                 <Box>
                     <Text fontSize="xs" fontWeight="bold" mb={1} color="gray.600">Status</Text>
-                    <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} w="160px" size="sm" borderRadius="md">
-                        <option value="all">Todas</option>
-                        <option value="paid">Pagas</option>
-                        <option value="unpaid">Não Pagas</option>
+                    <Select value={statusFilter} onChange={(e) => updateSearchParams("situacao", e.target.value)} w="160px" size="sm" borderRadius="md">
+                        <option value="todos">Todas</option>
+                        <option value="pagas">Pagas</option>
+                        <option value="pendentes">Não Pagas</option>
                     </Select>
                 </Box>
 
                 <Box>
                     <Text fontSize="xs" fontWeight="bold" mb={1} color="gray.600">Recebimento</Text>
-                    <Select value={receivedFilter} onChange={(e) => setReceivedFilter(e.target.value)} w="160px" size="sm" borderRadius="md">
-                        <option value="all">Todos</option>
-                        <option value="received">Recebidas</option>
-                        <option value="unreceived">Não Recebidas</option>
+                    <Select value={receivedFilter} onChange={(e) => updateSearchParams("recebimento", e.target.value)} w="160px" size="sm" borderRadius="md">
+                        <option value="todos">Todos</option>
+                        <option value="recebidos">Recebidas</option>
+                        <option value="pendentes">Não Recebidas</option>
                     </Select>
                 </Box>
 
                 <Box>
                     <Text fontSize="xs" fontWeight="bold" mb={1} color="gray.600">Família</Text>
                     <HStack>
-                        <Select placeholder="Todas as Famílias" value={familyFilter} onChange={(e) => setFamilyFilter(e.target.value)} w="200px" size="sm" borderRadius="md">
+                        <Select placeholder="Todas as Famílias" value={familyFilter} onChange={(e) => updateSearchParams("familia", e.target.value)} w="200px" size="sm" borderRadius="md">
                             {families.map(f => (
                                 <option key={f.id} value={f.id}>{f.name}</option>
                             ))}
@@ -277,7 +311,7 @@ export default function DashboardPage() {
                         w="140px"
                         size="sm"
                         value={startDateFilter}
-                        onChange={(e) => setStartDateFilter(e.target.value)}
+                        onChange={(e) => updateSearchParams("dataInicial", e.target.value)}
                         borderRadius="md"
                     />
                 </Box>
@@ -289,19 +323,18 @@ export default function DashboardPage() {
                         w="140px"
                         size="sm"
                         value={endDateFilter}
-                        onChange={(e) => setEndDateFilter(e.target.value)}
+                        onChange={(e) => updateSearchParams("dataFinal", e.target.value)}
                         borderRadius="md"
                     />
                 </Box>
 
-                <Button variant="ghost" colorScheme="gray" size="sm" onClick={() => { setStatusFilter("all"); setReceivedFilter("all"); setFamilyFilter(""); setStartDateFilter(""); setEndDateFilter(""); }}>
+                <Button variant="ghost" colorScheme="gray" size="sm" onClick={() => setSearchParams(new URLSearchParams({ situacao: "pendentes" }))}>
                     Limpar Filtros
                 </Button>
             </Flex>
 
-            {loading ? (
-                <Flex justify="center" p={10}><Spinner /></Flex>
-            ) : (
+            {/* Tabela envolta com o Box de position absolute para carregamento sem piscar */}
+            <Box position="relative" opacity={loading ? 0.7 : 1} pointerEvents={loading ? "none" : "auto"}>
                 <BillsTable
                     bills={filteredBills}
                     families={families}
@@ -312,7 +345,12 @@ export default function DashboardPage() {
                     onSelect={handleSelectBill}
                     onSelectAll={handleSelectAllBills}
                 />
-            )}
+                {loading && (
+                    <Flex position="absolute" top={0} left={0} right={0} bottom={0} justify="center" align="center" zIndex={2}>
+                        <Spinner size="xl" color="brand.500" thickness="4px" />
+                    </Flex>
+                )}
+            </Box>
 
             <FamilyFormModal isOpen={isFamilyOpen} onClose={onCloseFamily} onSuccess={loadData} familyToEdit={familyToEdit} />
             <BillFormModal

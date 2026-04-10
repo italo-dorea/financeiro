@@ -18,6 +18,7 @@ import {
     HStack,
     SimpleGrid,
     GridItem,
+    Box
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { NumericFormat } from "react-number-format";
@@ -45,6 +46,7 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
     const [isReceived, setIsReceived] = useState(false);
     const [paymentDate, setPaymentDate] = useState("");
     const [createdAt, setCreatedAt] = useState("");
+    const [driveUrl, setDriveUrl] = useState("");
 
     // Recurrence logic
     const [isRecurring, setIsRecurring] = useState(false);
@@ -62,6 +64,7 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
             setIsReceived(billToEdit.received || false);
             setPaymentDate(billToEdit.payment_date || "");
             setCreatedAt(billToEdit.created_at || "");
+            setDriveUrl(billToEdit.drive_url || "");
             setIsRecurring(billToEdit.is_recurring ?? false);
             setPeriodicity(billToEdit.periodicity || "monthly");
             setInstallments(billToEdit.total_installments?.toString() || "");
@@ -80,6 +83,7 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
         setIsReceived(false);
         setPaymentDate("");
         setCreatedAt("");
+        setDriveUrl("");
         setIsRecurring(false);
         setPeriodicity("monthly");
         setInstallments("");
@@ -107,6 +111,7 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
             paid: isPaid,
             received: isReceived,
             payment_date: paymentDate || null,
+            drive_url: driveUrl || null,
             ...(isRecurring ? {
                 is_recurring: isRecurring,
                 periodicity: periodicity,
@@ -146,19 +151,19 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                         <GridItem colSpan={1}>
                             <FormControl isRequired>
+                                <FormLabel>Descrição</FormLabel>
+                                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Conta de Luz" />
+                            </FormControl>
+                        </GridItem>
+
+                        <GridItem colSpan={1}>
+                            <FormControl isRequired>
                                 <FormLabel>Família</FormLabel>
                                 <Select placeholder="Selecione a família" value={familyId} onChange={(e) => setFamilyId(e.target.value)}>
                                     {families.map((f) => (
                                         <option key={f.id} value={f.id}>{f.name}</option>
                                     ))}
                                 </Select>
-                            </FormControl>
-                        </GridItem>
-
-                        <GridItem colSpan={1}>
-                            <FormControl isRequired>
-                                <FormLabel>Descrição</FormLabel>
-                                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Conta de Luz" />
                             </FormControl>
                         </GridItem>
 
@@ -255,6 +260,18 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
                                 </FormControl>
                             </GridItem>
                         )}
+
+                        <GridItem colSpan={{ base: 1, md: 2 }}>
+                            <FormControl>
+                                <FormLabel>Link do Comprovante/Anexo (Google Drive ou outro)</FormLabel>
+                                <Input value={driveUrl} onChange={(e) => setDriveUrl(e.target.value)} placeholder="https://drive.google.com/..." />
+                            </FormControl>
+                            {driveUrl && (
+                                <Box mt={4} h="200px" w="full" borderWidth="1px" borderRadius="md" overflow="hidden">
+                                    <iframe src={driveUrl} width="100%" height="100%" style={{ border: 'none' }} title="Anexo Fatura" />
+                                </Box>
+                            )}
+                        </GridItem>
 
                         <GridItem colSpan={{ base: 1, md: 2 }}>
                             <FormControl>
