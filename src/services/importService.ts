@@ -15,7 +15,7 @@ export const importService = {
         let lastError = null;
 
         const promises = bills.map(async (bill) => {
-            const { error } = await supabase.from("bill_occurrences").insert(bill);
+            const { error } = await supabase.from("bill_occurrences").insert(bill as any);
             if (!error) {
                 successCount++;
             } else {

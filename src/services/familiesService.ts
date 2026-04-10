@@ -10,11 +10,11 @@ export const familiesService = {
     },
 
     async create(family: Partial<Family>) {
-        return await supabase.from("families").insert(family).select().single();
+        return await supabase.from("families").insert(family as any).select().single();
     },
 
     async update(id: string, updates: Partial<Family>) {
-        return await supabase.from("families").update(updates).eq("id", id).select().single();
+        return await supabase.from("families").update(updates as any).eq("id", id).select().single();
     },
 
     async delete(id: string) {
