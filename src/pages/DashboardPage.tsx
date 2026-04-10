@@ -14,7 +14,7 @@ import {
     useDisclosure,
     HStack,
     useToast,
-    Spinner,
+    Progress,
     Text,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
@@ -209,6 +209,20 @@ export default function DashboardPage() {
     };
 
     return (
+        <>
+        {loading && (
+            <Progress
+                size="xs"
+                isIndeterminate
+                colorScheme="blue"
+                position="fixed"
+                top={0}
+                left={0}
+                right={0}
+                zIndex={9999}
+                borderRadius={0}
+            />
+        )}
         <Container maxW="1400px" py={6}>
             <Flex justify="space-between" align="center" mb={8} direction={{ base: "column", md: "row" }} gap={4} borderBottom="1px" borderColor="gray.200" pb={4}>
                 <HStack spacing={4}>
@@ -333,24 +347,16 @@ export default function DashboardPage() {
                 </Button>
             </Flex>
 
-            {/* Tabela envolta com o Box de position absolute para carregamento sem piscar */}
-            <Box position="relative" opacity={loading ? 0.7 : 1} pointerEvents={loading ? "none" : "auto"}>
-                <BillsTable
-                    bills={filteredBills}
-                    families={families}
-                    onEdit={handleEditBill}
-                    onDelete={handleDeleteBill}
-                    onUpdate={handleUpdateBill}
-                    selectedIds={selectedBillIds}
-                    onSelect={handleSelectBill}
-                    onSelectAll={handleSelectAllBills}
-                />
-                {loading && (
-                    <Flex position="absolute" top={0} left={0} right={0} bottom={0} justify="center" align="center" zIndex={2}>
-                        <Spinner size="xl" color="brand.500" thickness="4px" />
-                    </Flex>
-                )}
-            </Box>
+            <BillsTable
+                bills={filteredBills}
+                families={families}
+                onEdit={handleEditBill}
+                onDelete={handleDeleteBill}
+                onUpdate={handleUpdateBill}
+                selectedIds={selectedBillIds}
+                onSelect={handleSelectBill}
+                onSelectAll={handleSelectAllBills}
+            />
 
             <FamilyFormModal isOpen={isFamilyOpen} onClose={onCloseFamily} onSuccess={loadData} familyToEdit={familyToEdit} />
             <BillFormModal
@@ -367,5 +373,6 @@ export default function DashboardPage() {
                 families={families}
             />
         </Container>
+        </>
     );
 }

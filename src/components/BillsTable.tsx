@@ -5,7 +5,7 @@ import {
 import { DeleteIcon, EditIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import { Family } from "../domain/types";
 import { NumericFormat } from "react-number-format";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Props = {
     bills: any[]; // Replace with Bill type
@@ -21,7 +21,12 @@ type Props = {
 export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, selectedIds, onSelect, onSelectAll }: Props) {
     const toast = useToast();
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(50);
+
+    // Reset to page 1 whenever the bills list changes (filter applied)
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [bills]);
 
     const totalPages = Math.ceil(bills.length / pageSize) || 1;
     const startIndex = (currentPage - 1) * pageSize;
@@ -61,22 +66,9 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, select
                             <Th width="40px">
                                 <Checkbox
                                     colorScheme="whiteAlpha"
-                                    isChecked={visibleBills.length > 0 && visibleBills.every(b => selectedIds.includes(b.id))}
-                                    isIndeterminate={visibleBills.some(b => selectedIds.includes(b.id)) && !visibleBills.every(b => selectedIds.includes(b.id))}
-                                    onChange={(e) => {
-                                        const checked = e.target.checked;
-                                        if (checked) {
-                                            // Select all visible
-                                            visibleBills.forEach(b => {
-                                                if (!selectedIds.includes(b.id)) onSelect(b.id, true);
-                                            });
-                                        } else {
-                                            // Deselect all visible
-                                            visibleBills.forEach(b => {
-                                                if (selectedIds.includes(b.id)) onSelect(b.id, false);
-                                            });
-                                        }
-                                    }}
+                                    isChecked={bills.length > 0 && bills.every(b => selectedIds.includes(b.id))}
+                                    isIndeterminate={bills.some(b => selectedIds.includes(b.id)) && !bills.every(b => selectedIds.includes(b.id))}
+                                    onChange={(e) => onSelectAll(e.target.checked)}
                                 />
                             </Th>
                             <Th color="white">Descrição</Th>
