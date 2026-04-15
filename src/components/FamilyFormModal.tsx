@@ -38,8 +38,8 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
     const [bankAccount, setBankAccount] = useState("");
     const [bankPixKey, setBankPixKey] = useState("");
 
-    const isAssistant = role === "assistant";
-    const isReadOnly = isAssistant && !!familyToEdit;
+    const isAdmin = role === "admin";
+    const isReadOnly = !isAdmin && !!familyToEdit;
 
     useEffect(() => {
         if (isOpen) {

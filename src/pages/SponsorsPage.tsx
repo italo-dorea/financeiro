@@ -23,8 +23,8 @@ export default function SponsorsPage() {
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const isAnalyst = role === "analyst";
-  const isAssistant = role === "assistant";
+  const isAdmin = role === "admin";
+  const isReadOnly = !isAdmin;
 
   useEffect(() => {
     loadSponsors();
@@ -122,7 +122,7 @@ export default function SponsorsPage() {
                       icon={<EditIcon />}
                       size="sm"
                       onClick={() => handleOpenForm(s)}
-                      isDisabled={isAssistant}
+                      isDisabled={isReadOnly}
                     />
                     <IconButton
                       aria-label="Excluir"
@@ -131,7 +131,7 @@ export default function SponsorsPage() {
                       colorScheme="red"
                       variant="ghost"
                       onClick={() => handleDelete(s.id)}
-                      isDisabled={isAnalyst || isAssistant}
+                      isDisabled={isReadOnly}
                     />
                   </HStack>
                 </Td>
@@ -159,20 +159,20 @@ export default function SponsorsPage() {
           <ModalBody>
             <FormControl mb={4} isRequired>
               <FormLabel>Nome</FormLabel>
-              <Input value={name} onChange={e => setName(e.target.value)} isReadOnly={isAssistant && editSponsor} />
+              <Input value={name} onChange={e => setName(e.target.value)} isReadOnly={isReadOnly && editSponsor} />
             </FormControl>
             <FormControl mb={4}>
               <FormLabel>Email</FormLabel>
-              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} isReadOnly={isAssistant && editSponsor} />
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} isReadOnly={isReadOnly && editSponsor} />
             </FormControl>
             <FormControl mb={4}>
               <FormLabel>Telefone</FormLabel>
-              <Input value={phone} onChange={e => setPhone(e.target.value)} isReadOnly={isAssistant && editSponsor} />
+              <Input value={phone} onChange={e => setPhone(e.target.value)} isReadOnly={isReadOnly && editSponsor} />
             </FormControl>
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
-            <Button colorScheme="blue" onClick={handleSave} isLoading={submitting} isDisabled={isAssistant && editSponsor}>
+            <Button colorScheme="blue" onClick={handleSave} isLoading={submitting} isDisabled={isReadOnly && editSponsor}>
               Salvar
             </Button>
           </ModalFooter>

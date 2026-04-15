@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
-export type Role = "admin" | "analyst" | "assistant" | null;
+export type Role = "admin" | "user" | null;
 
 interface AuthContextType {
   user: User | null;
@@ -25,23 +25,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initialLoadDone = useRef(false);
 
   const fetchRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("user_roles")
+        .from("profiles")
         .select("role")
-        .eq("user_id", userId)
+        .eq("id", userId)
         .single();
       
       if (error) {
-        console.error("Error fetching role", error);
+        console.error("Error fetching role:", error);
         setRole(null);
       } else if (data) {
         setRole(data.role as Role);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Unexpected error fetching role:", err);
       setRole(null);
     }
   };
@@ -62,20 +63,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error("Error getting session:", error);
       } finally {
+        initialLoadDone.current = true;
         setIsLoading(false);
       }
     };
 
     getInitialSession();
 
-    // Listen for auth changes
+    // Listen for auth changes (after the initial load)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      // Skip if the initial load hasn't completed — getInitialSession handles it
+      if (!initialLoadDone.current) return;
+
       setSession(session);
       setUser(session?.user ?? null);
+
       if (session?.user) {
-        setIsLoading(true);
         await fetchRole(session.user.id);
-        setIsLoading(false);
       } else {
         setRole(null);
       }
