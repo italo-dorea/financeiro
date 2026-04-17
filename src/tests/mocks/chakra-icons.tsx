@@ -1,0 +1,51 @@
+/**
+ * Mock leve do @chakra-ui/icons para testes.
+ * Todos os ícones são substituídos por um SVG vazio.
+ */
+export const AddIcon = () => null;
+export const EditIcon = () => null;
+export const DeleteIcon = () => null;
+export const CheckIcon = () => null;
+export const CloseIcon = () => null;
+export const SearchIcon = () => null;
+export const ChevronDownIcon = () => null;
+export const ChevronUpIcon = () => null;
+export const ChevronLeftIcon = () => null;
+export const ChevronRightIcon = () => null;
+export const ArrowBackIcon = () => null;
+export const ArrowForwardIcon = () => null;
+export const DownloadIcon = () => null;
+export const ExternalLinkIcon = () => null;
+export const InfoIcon = () => null;
+export const WarningIcon = () => null;
+export const WarningTwoIcon = () => null;
+export const AttachmentIcon = () => null;
+export const CalendarIcon = () => null;
+export const StarIcon = () => null;
+export const EmailIcon = () => null;
+export const PhoneIcon = () => null;
+export const LockIcon = () => null;
+export const UnlockIcon = () => null;
+export const ViewIcon = () => null;
+export const ViewOffIcon = () => null;
+export const HamburgerIcon = () => null;
+export const RepeatIcon = () => null;
+export const RepeatClockIcon = () => null;
+export const SettingsIcon = () => null;
+export const MoonIcon = () => null;
+export const SunIcon = () => null;
+export const CopyIcon = () => null;
+export const LinkIcon = () => null;
+export const MinusIcon = () => null;
+export const NotAllowedIcon = () => null;
+export const QuestionIcon = () => null;
+export const QuestionOutlineIcon = () => null;
+export const SmallAddIcon = () => null;
+export const SmallCloseIcon = () => null;
+export const TriangleDownIcon = () => null;
+export const TriangleUpIcon = () => null;
+export const UpDownIcon = () => null;
+export const ChatIcon = () => null;
+export const BellIcon = () => null;
+export const AtSignIcon = () => null;
+export const SpinnerIcon = () => null;
