@@ -48,15 +48,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Get initial session
+    // One-time migration: clear any stale Supabase token from localStorage
+    // left over from before switching to sessionStorage-based auth.
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"))
+      .forEach((k) => localStorage.removeItem(k));
+
     const getInitialSession = async () => {
       try {
+        // sessionStorage is cleared automatically when the browser closes,
+        // so getSession() will always return null on a fresh start — no
+        // stale token, no refresh loop.
         const { data: { session }, error } = await supabase.auth.getSession();
 
-        // Network failure or token unrefreshable: clear stale storage and force login
         if (error) {
-          console.warn("Session error (possibly stale token or offline):", error.message);
-          await supabase.auth.signOut();
+          console.warn("Session error:", error.message);
           setSession(null);
           setUser(null);
           setRole(null);
@@ -70,13 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await fetchRole(session.user.id);
         }
       } catch (err) {
-        // Fetch/network failure: clear stale session to avoid infinite retry loop
-        console.warn("Network error during session init, clearing stale session:", err);
-        try {
-          await supabase.auth.signOut();
-        } catch {
-          // Ignore signOut errors when offline — storage will be cleared locally
-        }
+        console.warn("Unexpected error loading session:", err);
         setSession(null);
         setUser(null);
         setRole(null);

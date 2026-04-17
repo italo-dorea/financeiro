@@ -8,23 +8,14 @@ if (!url || !anon) {
   throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env");
 }
 
-// Custom fetch with timeout to prevent infinite retry loops on network failure
-const fetchWithTimeout: typeof fetch = (input, init) => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
-  return fetch(input, { ...init, signal: controller.signal }).finally(() =>
-    clearTimeout(timer)
-  );
-};
-
 export const supabase = createClient<Database>(url, anon, {
   auth: {
-    // Disable background auto-refresh; session is refreshed on-demand via getSession()
-    autoRefreshToken: false,
+    // Session lives only while the browser is open (sessionStorage).
+    // When the browser closes, the session is cleared automatically —
+    // no stale tokens, no refresh loops on next startup.
+    storage: window.sessionStorage,
     persistSession: true,
+    autoRefreshToken: true,
     detectSessionInUrl: true,
-  },
-  global: {
-    fetch: fetchWithTimeout,
   },
 });
