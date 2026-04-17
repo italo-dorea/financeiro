@@ -52,16 +52,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
+
+        // Network failure or token unrefreshable: clear stale storage and force login
+        if (error) {
+          console.warn("Session error (possibly stale token or offline):", error.message);
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setRole(null);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           await fetchRole(session.user.id);
         }
-      } catch (error) {
-        console.error("Error getting session:", error);
+      } catch (err) {
+        // Fetch/network failure: clear stale session to avoid infinite retry loop
+        console.warn("Network error during session init, clearing stale session:", err);
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // Ignore signOut errors when offline — storage will be cleared locally
+        }
+        setSession(null);
+        setUser(null);
+        setRole(null);
       } finally {
         initialLoadDone.current = true;
         setIsLoading(false);
