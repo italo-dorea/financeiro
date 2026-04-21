@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box, Button, Container, Flex, Heading, HStack, Table, Thead, Tbody, Tr, Th, Td,
-  IconButton, useDisclosure, useToast, Spinner, Modal, ModalOverlay, ModalContent,
-  ModalHeader, ModalCloseButton, ModalBody, ModalFooter, FormControl, FormLabel, Input
+  IconButton, useDisclosure, useToast, Modal, ModalOverlay, ModalContent,
+  ModalHeader, ModalCloseButton, ModalBody, ModalFooter, FormControl, FormLabel, Input,
+  Progress, Text
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import { sponsorsService } from "../services/sponsorsService";
@@ -33,9 +34,15 @@ export default function SponsorsPage() {
   const loadSponsors = async () => {
     try {
       setLoading(true);
-      const { data } = await sponsorsService.getAll();
+      const { data, error } = await sponsorsService.getAll();
+      if (error) {
+        console.error("loadSponsors error:", error);
+        toast({ status: "error", title: "Erro", description: error.message || "Erro ao carregar patrocinadores." });
+        return;
+      }
       if (data) setSponsors(data);
     } catch (error: any) {
+      console.error("loadSponsors exception:", error);
       toast({ status: "error", title: "Erro", description: error.message || "Erro ao carregar patrocinadores." });
     } finally {
       setLoading(false);
@@ -58,24 +65,37 @@ export default function SponsorsPage() {
   };
 
   const handleSave = async () => {
-    setSubmitting(true);
-    const payload = { name, email, phone };
-    
-    let error;
-    if (editSponsor) {
-      ({ error } = await sponsorsService.update(editSponsor.id, payload));
-    } else {
-      ({ error } = await sponsorsService.create(payload));
+    if (!name) {
+      toast({ status: "warning", title: "Nome é obrigatório." });
+      return;
     }
 
-    setSubmitting(false);
+    setSubmitting(true);
+    try {
+      const payload = { name, email: email || null, phone: phone || null };
+      
+      let result;
+      if (editSponsor) {
+        result = await sponsorsService.update(editSponsor.id, payload);
+      } else {
+        result = await sponsorsService.create(payload);
+      }
 
-    if (error) {
-      toast({ status: "error", title: "Erro ao salvar", description: error.message });
-    } else {
-      toast({ status: "success", title: "Salvo com sucesso" });
-      onClose();
-      loadSponsors();
+      console.log("handleSave result:", result);
+
+      if (result.error) {
+        console.error("handleSave error:", result.error);
+        toast({ status: "error", title: "Erro ao salvar", description: result.error.message });
+      } else {
+        toast({ status: "success", title: "Salvo com sucesso" });
+        onClose();
+        loadSponsors();
+      }
+    } catch (err: any) {
+      console.error("handleSave exception:", err);
+      toast({ status: "error", title: "Erro inesperado", description: err?.message || "Tente novamente." });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -91,93 +111,104 @@ export default function SponsorsPage() {
   };
 
   return (
-    <Container maxW="1200px" py={6}>
-      <Flex justify="space-between" mb={6}>
-        <Heading size="lg" color="brand.600">Patrocinadores</Heading>
-        <Button leftIcon={<AddIcon />} colorScheme="brand" onClick={() => handleOpenForm()}>
-          Adicionar
-        </Button>
-      </Flex>
+    <>
+      {loading && (
+        <Progress
+          size="xs"
+          isIndeterminate
+          colorScheme="blue"
+          position="fixed"
+          top={0}
+          left={0}
+          right={0}
+          zIndex={9999}
+          borderRadius={0}
+        />
+      )}
+      <Container maxW="1200px" py={4}>
+        <Flex justify="space-between" align="center" mb={6}>
+          <Heading size="lg" color="brand.600">Patrocinadores</Heading>
+          <Button leftIcon={<AddIcon />} colorScheme="brand" onClick={() => handleOpenForm()}>
+            Adicionar
+          </Button>
+        </Flex>
 
-      <Box position="relative" bg="white" shadow="sm" borderRadius="md" overflowX="auto" borderWidth="1px" opacity={loading ? 0.7 : 1} pointerEvents={loading ? "none" : "auto"}>
-        <Table variant="simple">
-          <Thead bg="gray.50">
-            <Tr>
-              <Th>Nome</Th>
-              <Th>Email</Th>
-              <Th>Telefone</Th>
-              <Th w="100px">Ações</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {sponsors.map((s) => (
-              <Tr key={s.id}>
-                <Td>{s.name}</Td>
-                <Td>{s.email}</Td>
-                <Td>{s.phone}</Td>
-                <Td>
-                  <HStack spacing={2}>
-                    <IconButton
-                      aria-label="Editar"
-                      icon={<EditIcon />}
-                      size="sm"
-                      onClick={() => handleOpenForm(s)}
-                      isDisabled={isReadOnly}
-                    />
-                    <IconButton
-                      aria-label="Excluir"
-                      icon={<DeleteIcon />}
-                      size="sm"
-                      colorScheme="red"
-                      variant="ghost"
-                      onClick={() => handleDelete(s.id)}
-                      isDisabled={isReadOnly}
-                    />
-                  </HStack>
-                </Td>
-              </Tr>
-            ))}
-            {sponsors.length === 0 && (
+        <Box bg="white" shadow="sm" borderRadius="md" overflowX="auto" borderWidth="1px">
+          <Table variant="simple">
+            <Thead bg="brand.500">
               <Tr>
-                <Td colSpan={4} textAlign="center" py={6} color="gray.500">Nenhum patrocinador cadastrado.</Td>
+                <Th color="white">Nome</Th>
+                <Th color="white">Email</Th>
+                <Th color="white">Telefone</Th>
+                <Th color="white" w="100px">Ações</Th>
               </Tr>
-            )}
-          </Tbody>
-        </Table>
-        {loading && (
-          <Flex position="absolute" top={0} left={0} right={0} bottom={0} justify="center" align="center" zIndex={2}>
-            <Spinner size="xl" color="brand.500" thickness="4px" />
-          </Flex>
-        )}
-      </Box>
+            </Thead>
+            <Tbody>
+              {sponsors.map((s, index) => (
+                <Tr key={s.id} _hover={{ bg: "blue.50" }} bg={index % 2 === 1 ? "gray.50" : "white"}>
+                  <Td fontWeight="medium">{s.name}</Td>
+                  <Td>{s.email || <Text color="gray.400">-</Text>}</Td>
+                  <Td>{s.phone || <Text color="gray.400">-</Text>}</Td>
+                  <Td>
+                    <HStack spacing={1}>
+                      <IconButton
+                        aria-label="Editar"
+                        icon={<EditIcon />}
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleOpenForm(s)}
+                        isDisabled={isReadOnly}
+                      />
+                      <IconButton
+                        aria-label="Excluir"
+                        icon={<DeleteIcon />}
+                        size="sm"
+                        colorScheme="red"
+                        variant="ghost"
+                        onClick={() => handleDelete(s.id)}
+                        isDisabled={isReadOnly}
+                      />
+                    </HStack>
+                  </Td>
+                </Tr>
+              ))}
+              {sponsors.length === 0 && (
+                <Tr>
+                  <Td colSpan={4} textAlign="center" py={8} color="gray.500">Nenhum patrocinador cadastrado.</Td>
+                </Tr>
+              )}
+            </Tbody>
+          </Table>
+        </Box>
 
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{editSponsor ? "Editar Patrocinador" : "Novo Patrocinador"}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <FormControl mb={4} isRequired>
-              <FormLabel>Nome</FormLabel>
-              <Input value={name} onChange={e => setName(e.target.value)} isReadOnly={isReadOnly && editSponsor} />
-            </FormControl>
-            <FormControl mb={4}>
-              <FormLabel>Email</FormLabel>
-              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} isReadOnly={isReadOnly && editSponsor} />
-            </FormControl>
-            <FormControl mb={4}>
-              <FormLabel>Telefone</FormLabel>
-              <Input value={phone} onChange={e => setPhone(e.target.value)} isReadOnly={isReadOnly && editSponsor} />
-            </FormControl>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
-            <Button colorScheme="blue" onClick={handleSave} isLoading={submitting} isDisabled={isReadOnly && editSponsor}>
-              Salvar
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </Container>
+        <Modal isOpen={isOpen} onClose={onClose}>
+          <ModalOverlay />
+          <ModalContent maxH="90vh" display="flex" flexDirection="column">
+            <ModalHeader>{editSponsor ? "Editar Patrocinador" : "Novo Patrocinador"}</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <FormControl mb={4} isRequired>
+                <FormLabel>Nome</FormLabel>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do patrocinador" />
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Email</FormLabel>
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" />
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Telefone</FormLabel>
+                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(99) 99999-9999" />
+              </FormControl>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
+              <Button colorScheme="blue" onClick={handleSave} isLoading={submitting}>
+                Salvar
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </Container>
+    </>
   );
 }

@@ -3,7 +3,6 @@ import {
     Button,
     Container,
     Flex,
-    Heading,
     Input,
     Select,
     SimpleGrid,
@@ -223,31 +222,8 @@ export default function DashboardPage() {
                 borderRadius={0}
             />
         )}
-        <Container maxW="1400px" py={6}>
-            <Flex justify="space-between" align="center" mb={8} direction={{ base: "column", md: "row" }} gap={4} borderBottom="1px" borderColor="gray.200" pb={4}>
-                <HStack spacing={4}>
-                    <img src="/logo.png" alt="Panagah Logo" style={{ height: "50px" }} />
-                    <Heading size="lg" color="brand.600">Dashboard de Faturas</Heading>
-                </HStack>
-                <HStack>
-                    {selectedBillIds.length > 0 && (
-                        <Button colorScheme="red" variant="solid" onClick={handleBatchDelete}>
-                            Excluir Selecionadas ({selectedBillIds.length})
-                        </Button>
-                    )}
-                    <Button leftIcon={<AddIcon />} display={"none"} variant="outline" colorScheme="blue" onClick={onOpenBatch}>
-                        Importar em Lote
-                    </Button>
-                    <Button leftIcon={<AddIcon />} onClick={() => { setBillToEdit(null); onOpenBill(); }}>
-                        Nova Fatura
-                    </Button>
-                    <Button leftIcon={<AddIcon />} variant="outline" onClick={() => handleOpenFamily()}>
-                        Nova Família
-                    </Button>
-                </HStack>
-            </Flex>
-
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={8}>
+        <Container maxW="1400px" py={4}>
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={6}>
                 <Stat p={4} shadow="md" borderWidth="1px" borderRadius="md" bg="red.50">
                     <StatLabel>Total a Pagar (Filtrado)</StatLabel>
                     <StatNumber>
@@ -280,7 +256,7 @@ export default function DashboardPage() {
                 </Stat>
             </SimpleGrid>
 
-            <Flex gap={4} mb={6} wrap="wrap" bg="white" p={6} borderRadius="lg" shadow="sm" borderWidth="1px" alignItems="flex-end">
+            <Flex gap={4} mb={4} wrap="wrap" bg="white" p={6} borderRadius="lg" shadow="sm" borderWidth="1px" alignItems="flex-end">
                 <Box>
                     <Text fontSize="xs" fontWeight="bold" mb={1} color="gray.600">Status</Text>
                     <Select value={statusFilter} onChange={(e) => updateSearchParams("situacao", e.target.value)} w="160px" size="sm" borderRadius="md">
@@ -346,6 +322,24 @@ export default function DashboardPage() {
                     Limpar Filtros
                 </Button>
             </Flex>
+
+            {/* Action Buttons above the table */}
+            <HStack mb={4} spacing={3} justify="flex-end">
+                {selectedBillIds.length > 0 && (
+                    <Button colorScheme="red" variant="solid" size="sm" onClick={handleBatchDelete}>
+                        Excluir Selecionadas ({selectedBillIds.length})
+                    </Button>
+                )}
+                <Button leftIcon={<AddIcon />} display={"none"} variant="outline" colorScheme="blue" size="sm" onClick={onOpenBatch}>
+                    Importar em Lote
+                </Button>
+                <Button leftIcon={<AddIcon />} size="sm" onClick={() => { setBillToEdit(null); onOpenBill(); }}>
+                    Nova Fatura
+                </Button>
+                <Button leftIcon={<AddIcon />} variant="outline" size="sm" onClick={() => handleOpenFamily()}>
+                    Nova Família
+                </Button>
+            </HStack>
 
             <BillsTable
                 bills={filteredBills}

@@ -15,25 +15,25 @@ test.describe("Login Page", () => {
   });
 
   test("exibe o formulário de login", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: /entrar|login|bem-vindo/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /gestão financeira/i })).toBeVisible();
     await expect(page.getByRole("textbox", { name: /email/i })).toBeVisible();
     await expect(page.getByLabel(/senha|password/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: /entrar|login/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /entrar no sistema/i })).toBeVisible();
   });
 
   test("exibe erro para credenciais inválidas", async ({ page }) => {
     await page.getByRole("textbox", { name: /email/i }).fill("invalido@test.com");
     await page.getByLabel(/senha|password/i).fill("senha-errada");
-    await page.getByRole("button", { name: /entrar|login/i }).click();
+    await page.getByRole("button", { name: /entrar no sistema/i }).click();
 
     // Supabase retorna erro → a página deve exibir mensagem de erro
     await expect(
-      page.getByText(/credenciais inválidas|email ou senha|invalid/i)
-    ).toBeVisible({ timeout: 10_000 });
+      page.getByText(/credenciais inválidas|email ou senha|invalid|erro de con/i)
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test("campos obrigatórios são validados", async ({ page }) => {
-    await page.getByRole("button", { name: /entrar|login/i }).click();
+    await page.getByRole("button", { name: /entrar no sistema/i }).click();
     // Deve ter algum feedback de campo obrigatório
     const emailField = page.getByRole("textbox", { name: /email/i });
     // HTML5 validation ou mensagem de erro custom

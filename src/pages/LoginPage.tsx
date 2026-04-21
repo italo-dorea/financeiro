@@ -25,24 +25,37 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Erro ao fazer login.",
+          description: "Credenciais inválidas ou erro no servidor.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        setLoading(false);
+      }
+      // Se não houver erro, apenas mantemos o loading ativo.
+      // O AuthContext atualizará o objeto `user`, e o componente
+      // fará o redirecionamento automaticamente via <Navigate /> 
+      // renderizado no topo do componente.
+    } catch (err: any) {
+      console.error("Login Exception:", err);
       toast({
-        title: "Erro ao fazer login.",
-        description: "Credenciais inválidas ou erro no servidor.",
+        title: "Erro de conexão.",
+        description: "Falha ao se comunicar com o servidor. Tente novamente mais tarde.",
         status: "error",
         duration: 5000,
         isClosable: true,
       });
-    } else {
-      const from = (location.state as any)?.from?.pathname || "/";
-      navigate(from, { replace: true });
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

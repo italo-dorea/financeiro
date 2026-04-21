@@ -3,9 +3,11 @@ import {
     useToast, Tooltip, Checkbox, HStack, Button, Text, Link
 } from "@chakra-ui/react";
 import { DeleteIcon, EditIcon, ExternalLinkIcon } from "@chakra-ui/icons";
+import { FiDownload } from "react-icons/fi";
 import { Family } from "../domain/types";
 import { NumericFormat } from "react-number-format";
 import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
 
 type Props = {
     bills: any[]; // Replace with Bill type
@@ -42,12 +44,43 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, select
         }
     };
 
+    const handleExportXlsx = () => {
+        const exportData = bills.map((bill) => ({
+            Família: families.find(f => f.id === bill.family_id)?.name || "-",
+            Descrição: bill.name,
+            Valor: bill.amount,
+            Pago: bill.paid ? "Sim" : "Não",
+            Recebido: bill.received ? "Sim" : "Não",
+            Vencimento: bill.due_date ? new Date(bill.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : "",
+            Observações: bill.note || "",
+            Anexo: bill.drive_url || "",
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Faturas");
+        XLSX.writeFile(wb, `faturas_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toast({ status: "success", title: "Planilha exportada!", duration: 2000 });
+    };
+
     return (
         <Box>
             <HStack mb={4} justify="space-between">
-                <Text fontSize="sm" color="gray.600">
-                    Mostrando {visibleBills.length > 0 ? startIndex + 1 : 0} a {Math.min(startIndex + pageSize, bills.length)} de {bills.length} faturas
-                </Text>
+                <HStack spacing={3}>
+                    <Text fontSize="sm" color="gray.600">
+                        Mostrando {visibleBills.length > 0 ? startIndex + 1 : 0} a {Math.min(startIndex + pageSize, bills.length)} de {bills.length} faturas
+                    </Text>
+                    <Button
+                        size="sm"
+                        leftIcon={<FiDownload />}
+                        colorScheme="green"
+                        variant="outline"
+                        onClick={handleExportXlsx}
+                        isDisabled={bills.length === 0}
+                    >
+                        Exportar Excel
+                    </Button>
+                </HStack>
                 <HStack>
                     <Text fontSize="sm" color="gray.600">Exibir:</Text>
                     <Select size="sm" w="80px" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}>
@@ -71,31 +104,40 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, select
                                     onChange={(e) => onSelectAll(e.target.checked)}
                                 />
                             </Th>
+                            <Th color="white">Família</Th>
                             <Th color="white">Descrição</Th>
-                            <Th color="white">Vencimento</Th>
                             <Th color="white" isNumeric>Valor</Th>
                             <Th color="white">Pago</Th>
                             <Th color="white">Recebido</Th>
-                            <Th color="white">Família</Th>
                             <Th color="white" width="100px">Anexo</Th>
                             <Th color="white" width="80px">Ações</Th>
                         </Tr>
                     </Thead>
                     <Tbody>
-                        {visibleBills.map((bill) => (
-                            <Tr key={bill.id} _hover={{ bg: "gray.50" }} bg={selectedIds.includes(bill.id) ? "blue.50" : "transparent"}>
+                        {visibleBills.map((bill, index) => (
+                            <Tr
+                                key={bill.id}
+                                _hover={{ bg: "blue.50" }}
+                                bg={
+                                    selectedIds.includes(bill.id)
+                                        ? "blue.50"
+                                        : index % 2 === 1
+                                            ? "gray.50"
+                                            : "white"
+                                }
+                            >
                                 <Td>
                                     <Checkbox
                                         isChecked={selectedIds.includes(bill.id)}
                                         onChange={(e) => onSelect(bill.id, e.target.checked)}
                                     />
                                 </Td>
+                                <Td>
+                                    {families.find(f => f.id === bill.family_id)?.name || "-"}
+                                </Td>
                                 <Td fontWeight="medium">
                                     {bill.name}
                                     {bill.note && <Text fontSize="xs" color="gray.500" noOfLines={1} title={bill.note}>{bill.note}</Text>}
-                                </Td>
-                                <Td>
-                                    {new Date(bill.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                                 </Td>
                                 <Td isNumeric>
                                     <NumericFormat
@@ -121,9 +163,6 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, select
                                         onChange={(e) => handleUpdate(bill.id, "received", e.target.checked)}
                                         colorScheme="blue"
                                     />
-                                </Td>
-                                <Td>
-                                    {families.find(f => f.id === bill.family_id)?.name || "-"}
                                 </Td>
                                 <Td>
                                     {bill.drive_url ? (
@@ -170,7 +209,7 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, select
                         ))}
                         {visibleBills.length === 0 && (
                             <Tr>
-                                <Td colSpan={9} textAlign="center" py={8} color="gray.500">
+                                <Td colSpan={8} textAlign="center" py={8} color="gray.500">
                                     Nenhuma fatura encontrada.
                                 </Td>
                             </Tr>

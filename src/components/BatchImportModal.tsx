@@ -205,10 +205,10 @@ export function BatchImportModal({ isOpen, onClose, onSuccess, families }: Props
     return (
         <Modal isOpen={isOpen} onClose={handleClose} size="6xl">
             <ModalOverlay />
-            <ModalContent>
+            <ModalContent maxH="90vh" display="flex" flexDirection="column">
                 <ModalHeader>Importação em Lote</ModalHeader>
                 <ModalCloseButton />
-                <ModalBody>
+                <ModalBody overflowY="auto">
                     <VStack spacing={6} align="stretch">
                         <HStack justify="space-between" bg="blue.50" _dark={{ bg: "blue.900" }} p={4} borderRadius="md">
                             <Box>

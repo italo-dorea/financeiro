@@ -102,52 +102,57 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
 
         setLoading(true);
 
-        const payload = {
-            name: description,
-            amount: parseFloat(amount),
-            due_date: dueDate,
-            family_id: familyId,
-            note: observations,
-            paid: isPaid,
-            received: isReceived,
-            payment_date: paymentDate || null,
-            drive_url: driveUrl || null,
-            ...(isRecurring ? {
-                is_recurring: isRecurring,
-                periodicity: periodicity,
-                total_installments: parseInt(installments) || null
-            } : {})
-        };
+        try {
+            const payload = {
+                name: description,
+                amount: parseFloat(amount),
+                due_date: dueDate,
+                family_id: familyId,
+                note: observations,
+                paid: isPaid,
+                received: isReceived,
+                payment_date: paymentDate || null,
+                drive_url: driveUrl || null,
+                ...(isRecurring ? {
+                    is_recurring: isRecurring,
+                    periodicity: periodicity,
+                    total_installments: parseInt(installments) || null
+                } : {})
+            };
 
-        let error;
-        if (billToEdit?.id) {
-            const { error: err } = await billsService.update(billToEdit.id, payload);
-            error = err;
-        } else {
-            const { error: err } = await billsService.create(payload);
-            error = err;
+            let error;
+            if (billToEdit?.id) {
+                const { error: err } = await billsService.update(billToEdit.id, payload);
+                error = err;
+            } else {
+                const { error: err } = await billsService.create(payload);
+                error = err;
+            }
+
+            if (error) {
+                toast({ status: "error", title: "Erro ao salvar fatura", description: error.message });
+                console.error(error);
+                return;
+            }
+
+            toast({ status: "success", title: "Fatura salva com sucesso!" });
+            onSuccess();
+            handleClose();
+        } catch (err: any) {
+            toast({ status: "error", title: "Erro inesperado", description: err?.message || "Tente novamente." });
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
-
-        if (error) {
-            toast({ status: "error", title: "Erro ao salvar fatura", description: error.message });
-            console.error(error);
-            return;
-        }
-
-        toast({ status: "success", title: "Fatura salva!" });
-        onSuccess();
-        handleClose();
     };
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose} size="4xl">
             <ModalOverlay />
-            <ModalContent>
+            <ModalContent maxH="90vh" display="flex" flexDirection="column">
                 <ModalHeader>{billToEdit ? "Editar Fatura" : "Nova Fatura"}</ModalHeader>
                 <ModalCloseButton />
-                <ModalBody>
+                <ModalBody overflowY="auto">
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                         <GridItem colSpan={1}>
                             <FormControl isRequired>

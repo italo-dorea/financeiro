@@ -2,7 +2,7 @@ import React from "react";
 import {
   Box, Flex, IconButton, useDisclosure, Drawer, DrawerOverlay,
   DrawerContent, DrawerCloseButton, DrawerHeader, DrawerBody, VStack, Button, Text,
-  Spacer
+  Spacer, HStack, Image
 } from "@chakra-ui/react";
 import { HamburgerIcon } from "@chakra-ui/icons";
 import { Link, useNavigate } from "react-router-dom";
@@ -32,7 +32,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           _hover={{ bg: "brand.700" }}
           mr={4}
         />
-        <Text fontSize="xl" fontWeight="bold">Sistema Financeiro</Text>
+        <Image src="/logo.png" alt="Logo" h="32px" mr={2} />
+        <Text fontSize="xl" fontWeight="bold">Dashboard de Faturas</Text>
         <Spacer />
         <Text fontSize="sm" mr={4}>
           {user?.email} ({role})
@@ -47,13 +48,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px">Menu</DrawerHeader>
+          <DrawerHeader borderBottomWidth="1px">
+            <HStack spacing={3}>
+              <Image src="/logo.png" alt="Panagah Logo" h="40px" />
+              <Text fontSize="lg" fontWeight="bold">Dashboard de Faturas</Text>
+            </HStack>
+          </DrawerHeader>
           <DrawerBody>
             <VStack spacing={4} align="stretch" mt={4}>
               <Button as={Link} to="/" variant="ghost" justifyContent="flex-start" onClick={onClose}>
                 Dashboard
               </Button>
-              <Button as={Link} to="/sponsors" variant="ghost" justifyContent="flex-start" onClick={onClose}>
+              <Button as={Link} to="/patrocinadores" variant="ghost" justifyContent="flex-start" onClick={onClose}>
                 Patrocinadores
               </Button>
             </VStack>

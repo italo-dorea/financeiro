@@ -13,6 +13,9 @@
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:run:headed": "cypress run --headed --browser chrome",
     "test:ci": "vitest run --coverage && playwright test"
   },
   "dependencies": {
@@ -46,6 +49,7 @@
     "@types/xlsx": "^0.0.35",
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^4.1.4",
+    "cypress": "^15.14.0",
     "jsdom": "^29.0.2",
     "typescript": "^5.5.4",
     "vite": "^5.4.2",

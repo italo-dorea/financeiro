@@ -134,10 +134,10 @@ export function FamilyFormModal({ isOpen, onClose, onSuccess, familyToEdit }: Pr
     return (
         <Modal isOpen={isOpen} onClose={handleClose} size="3xl">
             <ModalOverlay />
-            <ModalContent>
+            <ModalContent maxH="90vh" display="flex" flexDirection="column">
                 <ModalHeader>{familyToEdit ? "Editar Família" : "Nova Família"}</ModalHeader>
                 <ModalCloseButton />
-                <ModalBody>
+                <ModalBody overflowY="auto">
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                         <GridItem colSpan={{ base: 1, md: 2 }}>
                             <Heading size="SM" mb={2}>Informações Básicas</Heading>

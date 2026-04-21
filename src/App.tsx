@@ -20,7 +20,7 @@ export default function App() {
         } 
       />
       <Route 
-        path="/sponsors" 
+        path="/patrocinadores" 
         element={
           <ProtectedRoute>
             <Layout>
