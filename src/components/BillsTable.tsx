@@ -109,6 +109,7 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, select
                             <Th color="white" isNumeric>Valor</Th>
                             <Th color="white">Vencimento</Th>
                             <Th color="white">Pago</Th>
+                            <Th color="white">Dt. Pagamento</Th>
                             <Th color="white">Recebido</Th>
                             <Th color="white" width="100px">Anexo</Th>
                             <Th color="white" width="80px">Ações</Th>
@@ -164,6 +165,11 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, select
                                     />
                                 </Td>
                                 <Td>
+                                    {bill.payment_date
+                                        ? new Date(bill.payment_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+                                        : <Text fontSize="xs" color="gray.400">Não pago</Text>}
+                                </Td>
+                                <Td>
                                     <Switch
                                         isChecked={bill.received}
                                         onChange={(e) => handleUpdate(bill.id, "received", e.target.checked)}
@@ -215,7 +221,7 @@ export function BillsTable({ bills, families, onEdit, onDelete, onUpdate, select
                         ))}
                         {visibleBills.length === 0 && (
                             <Tr>
-                                <Td colSpan={9} textAlign="center" py={8} color="gray.500">
+                                <Td colSpan={10} textAlign="center" py={8} color="gray.500">
                                     Nenhuma fatura encontrada.
                                 </Td>
                             </Tr>
