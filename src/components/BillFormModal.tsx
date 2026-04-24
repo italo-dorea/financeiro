@@ -136,8 +136,14 @@ export function BillFormModal({ isOpen, onClose, onSuccess, families, billToEdit
             }
 
             toast({ status: "success", title: "Fatura salva com sucesso!" });
-            onSuccess();
-            handleClose();
+            // Defer close to the next tick so React finishes the current
+            // reconciliation cycle before unmounting. This prevents the
+            // Supabase internal AbortController from being cancelled mid-flight,
+            // which would throw "AbortError: signal is aborted without reason".
+            setTimeout(() => {
+                onSuccess();
+                handleClose();
+            }, 0);
         } catch (err: any) {
             toast({ status: "error", title: "Erro inesperado", description: err?.message || "Tente novamente." });
             console.error(err);

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
@@ -20,93 +20,70 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
+const fetchRole = async (userId: string): Promise<Role> => {
+  try {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) return null;
+    return data.role as Role;
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const initialLoadDone = useRef(false);
 
-  const fetchRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching role:", error);
-        setRole(null);
-      } else if (data) {
-        setRole(data.role as Role);
-      }
-    } catch (err) {
-      console.error("Unexpected error fetching role:", err);
-      setRole(null);
-    }
-  };
-
+  // ── Auth state listener ──────────────────────────────────────────────────
+  // RULE: onAuthStateChange callback must be SYNCHRONOUS.
+  // Never call supabase.from() or any async Supabase operation inside it.
+  // Doing so creates an internal conflict in the Supabase client causing
+  // AbortError on any concurrent data request (e.g. bill update).
+  //
+  // Supabase v2 fires INITIAL_SESSION on mount with the stored session,
+  // so this single listener handles boot + login + logout + token refresh.
   useEffect(() => {
-    // One-time migration: clear any stale Supabase token from localStorage
-    // left over from before switching to sessionStorage-based auth.
-    Object.keys(localStorage)
-      .filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"))
-      .forEach((k) => localStorage.removeItem(k));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
 
-    const getInitialSession = async () => {
-      try {
-        // sessionStorage is cleared automatically when the browser closes,
-        // so getSession() will always return null on a fresh start — no
-        // stale token, no refresh loop.
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Clear role immediately on logout.
+        // Role for logged-in users is fetched in the separate effect below.
+        if (!newSession?.user) setRole(null);
 
-        if (error) {
-          console.warn("Session error:", error.message);
-          setSession(null);
-          setUser(null);
-          setRole(null);
-          return;
-        }
-
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          await fetchRole(session.user.id);
-        }
-      } catch (err) {
-        console.warn("Unexpected error loading session:", err);
-        setSession(null);
-        setUser(null);
-        setRole(null);
-      } finally {
-        initialLoadDone.current = true;
+        // Boot loading is done after the first event (INITIAL_SESSION).
         setIsLoading(false);
       }
-    };
+    );
 
-    getInitialSession();
+    return () => subscription.unsubscribe();
+  }, []);
 
-    // Listen for auth changes (after the initial load)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Skip if the initial load hasn't completed — getInitialSession handles it
-      if (!initialLoadDone.current) return;
+  // ── Role fetch ───────────────────────────────────────────────────────────
+  // Runs in a separate effect so the DB query is never inside the auth
+  // listener. Uses a cancellation flag to avoid setting stale state if
+  // the user changes before the query resolves.
+  useEffect(() => {
+    if (!user) return;
 
-      setSession(session);
-      setUser(session?.user ?? null);
+    let cancelled = false;
 
-      if (session?.user) {
-        await fetchRole(session.user.id);
-      } else {
-        setRole(null);
-      }
+    fetchRole(user.id).then((userRole) => {
+      if (!cancelled) setRole(userRole);
     });
 
     return () => {
-      subscription.unsubscribe();
+      cancelled = true;
     };
-  }, []);
+  }, [user?.id]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
