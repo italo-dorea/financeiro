@@ -58,14 +58,21 @@ export const billsService = {
                 due_date: bill.due_date,
                 paid: bill.paid || false,
                 received: bill.received || false,
-                payment_date: bill.payment_date || null
+                payment_date: bill.payment_date || null,
+                drive_url: bill.drive_url || null,
             }).select().single();
         }
     },
 
     async update(id: string, updates: Partial<any>) {
+        // Strip recurrence-only fields that don't exist in bill_occurrences table
         const { is_recurring, periodicity, total_installments, ...cleanUpdates } = updates;
-        return await supabase.from("bill_occurrences").update(cleanUpdates).eq("id", id).select().single();
+        // Ensure drive_url is passed through (it may be explicitly set to null to clear it)
+        const payload = {
+            ...cleanUpdates,
+            drive_url: updates.drive_url !== undefined ? (updates.drive_url || null) : undefined,
+        };
+        return await supabase.from("bill_occurrences").update(payload).eq("id", id).select().single();
     },
 
     async delete(id: string) {
